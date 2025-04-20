@@ -352,7 +352,7 @@ if __name__ == '__main__':
     <!-- ローディング表示 -->
     <div id="loading">
         <div class="spinner"></div>
-        <div class="loading-text">翻訳処理中...</div>
+        <div class="loading-text">翻訳処理中...（完了後は自動で保存されます。ブラウザのセキュリティ上保存しない際は直接ファイルを開いてください。）</div>
     </div>
     
     <div class="container">
