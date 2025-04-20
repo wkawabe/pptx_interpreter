@@ -189,9 +189,10 @@ if __name__ == '__main__':
     # テンプレートディレクトリの作成
     os.makedirs('templates', exist_ok=True)
     
-    # HTMLテンプレートの作成（フォント選択機能付き）
-    with open('templates/index.html', 'w') as f:
-        f.write('''
+    # HTMLテンプレートの作成（シンプルなローディングエフェクト付き）
+    if not os.path.exists('templates/index.html'):
+        with open('templates/index.html', 'w') as f:
+            f.write('''
 <!DOCTYPE html>
 <html>
 <head>
