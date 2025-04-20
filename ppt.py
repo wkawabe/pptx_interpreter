@@ -217,6 +217,12 @@ if __name__ == '__main__':
             color: #333;
             text-align: center;
         }
+        .intro-text {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #555;
+            line-height: 1.5;
+        }
         .form-group {
             margin-bottom: 15px;
         }
@@ -240,6 +246,7 @@ if __name__ == '__main__':
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s;
+            width: 100%;
         }
         button:hover {
             background-color: #45a049;
@@ -302,10 +309,20 @@ if __name__ == '__main__':
         /* フォントプレビュー用のスタイル */
         .font-preview {
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 15px;
             margin-top: 10px;
             border-radius: 4px;
             min-height: 40px;
+            background-color: white;
+        }
+        
+        .font-info {
+            color: #666;
+            font-size: 12px;
+            margin-top: 8px;
+            font-style: italic;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
         }
         
         /* 各フォントのプレビュー用スタイル */
@@ -316,6 +333,19 @@ if __name__ == '__main__':
         .font-gothic { font-family: "MS Gothic", "ＭＳ ゴシック", sans-serif; }
         .font-mincho { font-family: "MS Mincho", "ＭＳ 明朝", serif; }
         .font-calibri { font-family: "Calibri", sans-serif; }
+        
+        /* フォントサンプル画像エリア */
+        .font-sample {
+            display: none;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .font-sample img {
+            max-width: 100%;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -327,7 +357,11 @@ if __name__ == '__main__':
     
     <div class="container">
         <h1>PowerPoint翻訳ツール</h1>
-        ファイルをアップし、て翻訳を開始してください。翻訳後は自動で保存されます。<br>
+        <div class="intro-text">
+            PowerPointファイルをアップロードして、日本語⇔英語の翻訳を行います。<br>
+            翻訳後のファイルは自動的にダウンロードされます。
+        </div>
+        
         {% if get_flashed_messages() %}
         <div class="flash-messages">
             {% for message in get_flashed_messages() %}
@@ -363,10 +397,13 @@ if __name__ == '__main__':
                 </select>
                 <div class="font-preview" id="fontPreview">
                     <span id="previewText">This is a preview text of the font / これはフォントのプレビューテキストです</span>
+                    <div class="font-info" id="fontInfo">
+                        フォントの説明がここに表示されます
+                    </div>
                 </div>
             </div>
             
-            <button type="submit" id="submitButton">翻訳</button>
+            <button type="submit" id="submitButton">翻訳開始</button>
         </form>
     </div>
     
@@ -375,13 +412,44 @@ if __name__ == '__main__':
         function updateFontPreview() {
             const fontSelect = document.getElementById('font_name');
             const previewText = document.getElementById('previewText');
+            const fontInfo = document.getElementById('fontInfo');
             const selectedFont = fontSelect.options[fontSelect.selectedIndex].value;
             
             // プレビューテキストのフォントを変更
             if (selectedFont === 'default') {
                 previewText.style.fontFamily = 'inherit';
+                fontInfo.textContent = 'プレゼンテーションの元のフォントが維持されます';
             } else {
                 previewText.style.fontFamily = selectedFont;
+                
+                // フォントの説明を設定
+                switch (selectedFont) {
+                    case 'Arial':
+                        fontInfo.textContent = 'クリアでモダンなサンセリフフォント。英語のプレゼンテーションに最適です。';
+                        break;
+                    case 'Times New Roman':
+                        fontInfo.textContent = '伝統的なセリフフォント。学術的な内容や正式な文書に適しています。';
+                        break;
+                    case 'Calibri':
+                        fontInfo.textContent = 'モダンでクリーンなサンセリフフォント。Office製品のデフォルトフォントです。';
+                        break;
+                    case 'Meiryo':
+                        fontInfo.textContent = '現代的な日本語フォント。画面表示に最適化されており、読みやすさに優れています。';
+                        break;
+                    case 'MS Gothic':
+                        fontInfo.textContent = '角張った日本語ゴシック体フォント。技術文書や表示が小さい場合に適しています。';
+                        break;
+                    case 'MS Mincho':
+                        fontInfo.textContent = '伝統的な日本語明朝体フォント。正式な文書や書籍調のプレゼンテーションに適しています。';
+                        break;
+                    default:
+                        fontInfo.textContent = '';
+                }
+            }
+            
+            // 日本語フォントの場合は注意書きを追加
+            if (['Meiryo', 'MS Gothic', 'MS Mincho'].includes(selectedFont)) {
+                fontInfo.textContent += ' （※ブラウザ上のプレビューと実際のPowerPointでの表示は異なる場合があります）';
             }
         }
         
@@ -395,6 +463,13 @@ if __name__ == '__main__':
             $('#translationForm').on('submit', function(e) {
                 e.preventDefault(); // 通常のフォーム送信を防止
                 
+                // ファイルが選択されているか確認
+                const fileInput = document.getElementById('file');
+                if (fileInput.files.length === 0) {
+                    alert('PowerPointファイルを選択してください');
+                    return;
+                }
+                
                 // ローディング表示
                 $('#loading').show();
                 
@@ -407,6 +482,11 @@ if __name__ == '__main__':
                     body: formData
                 })
                 .then(response => {
+                    // エラーレスポンスの確認
+                    if (!response.ok) {
+                        throw new Error('サーバーエラーが発生しました');
+                    }
+                    
                     // 完了ヘッダーがあるか確認
                     if (response.headers.get('X-Translation-Complete') === 'true') {
                         // ローディングを非表示
@@ -433,6 +513,9 @@ if __name__ == '__main__':
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
+                    
+                    // 成功メッセージ（オプション）
+                    // alert('翻訳が完了しました。ダウンロードを開始します。');
                 })
                 .catch(error => {
                     // エラー処理
